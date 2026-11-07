@@ -4,11 +4,11 @@ INGREDIENTS = [
     "mushroom",
     "pumpkin",
     "lolipop",
-    "bone", #havent
-    "skull", #havent
-    "herb", #havent
-    "slime", #havent
-    "crystal", #havent
+    "bone", 
+    "skull", 
+    "herb", 
+    "slime",
+    "crystal",
 ]
 
 POTIONS = {
