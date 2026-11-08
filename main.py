@@ -28,10 +28,10 @@ def main():
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 game.click(event.pos[0] // SCALE, event.pos[1] // SCALE)
 
-            game.update(dt)
-            ui.draw(canvas, game, art)
-            pygame.transform.scale(canvas, window.get_size(), window)
-            pygame.display.flip()
+        game.update(dt)
+        ui.draw(canvas, game, art)
+        pygame.transform.scale(canvas, window.get_size(), window)
+        pygame.display.flip()
 
 
 if __name__ == "__main__":

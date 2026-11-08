@@ -2,10 +2,10 @@ import pygame
 
 # screen
 W, H = 320, 180
-SCALE = 6
+SCALE = 4
 FPS = 60
 ASSETS = "assets"
-FONT = None
+FONT = "assets/PixelifySans-VariableFont_wght.ttf"
 SAVE = "discover.json"
 
 # brew

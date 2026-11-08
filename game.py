@@ -48,7 +48,7 @@ def save_d(found):
 
 
 class Game:
-    def __init(self, art):
+    def __init__(self, art):
         self.art = art
         self.play = art.play
         self.discover = load_d()
@@ -93,11 +93,10 @@ class Game:
             self.say(f"You need to add atleast {MIN} ingredients bro", 1.5)
             return
         self.brewing_t = BREW_T
-        self.play("brew")
 
     def finish_b(self):
         pid = self.current_p()
-        self.slots = {}
+        self.slots = []
         self.result = (pid, 3.0)
         if pid != "sludge" and pid not in self.discover:
             self.discover.add(pid)
@@ -107,7 +106,6 @@ class Game:
             self.dummy_t = 2.0
             self.dummy_color = POTIONS[pid][1]
             self.say(EFFECTS[pid], 3.0)
-            self.play("fail" if pid == "sludge" else "success")
         elif self.customer:
             self.server(pid)
 
@@ -141,7 +139,6 @@ class Game:
                 c["done"][i] = True
                 gain = 10 + int(10 * max(0.0, c["patience"]) / c["max"])
                 self.coins += gain
-                self.play("success")
                 if all(c["done"]):
                     extra = BOSS_B if c["boss"] else 0
                     self.coins += extra
@@ -154,11 +151,10 @@ class Game:
         # wrong potion
         self.lives -= 1
         self.say(f"{name}: What the hell is this? I didn't order this!")
-        self.play("fail")
         if WRONG_LEAVES:
             self.customer_leaves()
         elif self.lives <= 0:
-            self.state = "gamemover"
+            self.state = "gameover"
 
     def customer_leaves(self):
         self.customer = None
@@ -174,7 +170,6 @@ class Game:
             if rect.collidepoint(x, y):
                 if name not in self.slots and len(self.slots) < MAX:
                     self.slots.append(name)
-                    self.play("add")
                 return
         for i, rect in enumerate(SLOT_R):
             if rect.collidepoint(x, y) and i < len(self.slots):

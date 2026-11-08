@@ -54,12 +54,12 @@ def draw_bg(surf, art):
 
 def draw_menu(surf, game, art):
     f = art.font
-    txt(surf, art.big, "POTION BREWING", (W // 2, 40, (255, 190, 70), True))
-    txt(surf, f, "1 - Normal (1 potion each)"(W // 2, 80), center=True)
+    txt(surf, art.big, "POTION BREWING", (W // 2, 40), (255, 190, 70), True)
+    txt(surf, f, "1 - Normal (1 potion each)", (W // 2, 80), center=True)
     txt(surf, f, "2 - Hard(1-3 potions, bosses!)", (W // 2, 96), center=True)
     txt(surf, f, "3 - Practice on the dummy", (W // 2, 112), center=True)
     txt(surf, f, "B - Recipe book   ESC - Quit", (W // 2, 140), (180, 170, 200), True)
-    found = f"Recipes found: {len(game.discovered)}/{len(POTIONS)-1}"
+    found = f"Recipes found: {len(game.discover)}/{len(POTIONS)-1}"
     txt(surf, f, found, (W // 2, 160), (140, 220, 140), True)
 
 
@@ -70,7 +70,7 @@ def draw_game(surf, game, art):
 
     # cauldron n bubbles
     speed = 8 if game.brewing_t > 0 else 4
-    frames = art.cauldron_frame
+    frames = art.cauldron_frames
     surf.blit(frames[int(game.t * speed) % len(frames)], CAULDRON_POS)
     col = (110, 220, 110)
     if game.result and game.brewing_t <= 0:
@@ -226,7 +226,7 @@ def draw_book(surf, game, art):
     for pid, (name, color) in POTIONS.items():
         if pid == "sludge":
             continue
-        if pid in game.discovered:
+        if pid in game.discover:
             key = next(k for k, v in RECIPES.items() if v == pid)
             line = " + ".join(i.replace("_", " ") for i in key)
             txt(surf, f, name, (28, y), color)
