@@ -13,6 +13,8 @@ from settings import (
     DUMMY_POS,
     MESSAGE_Y,
     DIFF,
+    HINT_C,
+    HINT_RECT,
 )
 from data import POTIONS, RECIPES
 from game import ING_RECTS
@@ -54,13 +56,21 @@ def draw_bg(surf, art):
 
 def draw_menu(surf, game, art):
     f = art.font
-    txt(surf, art.big, "POTION BREWING", (W // 2, 40), (255, 190, 70), True)
-    txt(surf, f, "1 - Normal (1 potion each)", (W // 2, 80), center=True)
-    txt(surf, f, "2 - Hard(1-3 potions, bosses!)", (W // 2, 96), center=True)
-    txt(surf, f, "3 - Practice on the dummy", (W // 2, 112), center=True)
-    txt(surf, f, "B - Recipe book   ESC - Quit", (W // 2, 140), (180, 170, 200), True)
+    txt(surf, art.big, "POTION BREWING", (W // 2, 28), (255, 190, 70), True)
+    txt(surf, f, "1 - Normal (1 potion each)", (W // 2, 56), center=True)
+    txt(surf, f, "2 - Hard(1-3 potions, bosses!)", (W // 2, 71), center=True)
+    txt(surf, f, "3 - Practice on the dummy", (W // 2, 86), center=True)
+    s = game.scores
+    best = f"Best Normal: {s['normal']['coins']}    Hard: {s['hard']['coins']}"
+    txt(surf, f, best, (W // 2, 106), (255, 220, 80), True)
+    txt(surf, f, "B - Recipe book   ESC - Quit", (W // 2, 121), (180, 170, 200), True)
+    if not art.music_path:
+        mus = "no file (add assets/bgm.ogg)"
+    else:
+        mus = "OFF" if game.muted else "ON"
+    txt(surf, f, f"M - Music: {mus}", (W // 2, 136), (180, 170, 200), True)
     found = f"Recipes found: {len(game.discover)}/{len(POTIONS)-1}"
-    txt(surf, f, found, (W // 2, 160), (140, 220, 140), True)
+    txt(surf, f, found, (W // 2, 151), (140, 220, 140), True)
 
 
 def draw_game(surf, game, art):
@@ -88,6 +98,9 @@ def draw_game(surf, game, art):
     # shelf
     for name, rect in ING_RECTS.items():
         surf.blit(art.ing_img[name], rect)
+        if game.hint_t > 0 and name in game.hint_shown:
+            grow = 2 + int(abs(math.sin(game.t * 6)) * 3)
+            pygame.draw.rect(surf, (255, 200, 60), rect.inflate(grow * 2, grow * 2), 1)
         if rect.collidepoint(mx, my):
             pygame.draw.rect(surf, (255, 255, 120), rect.inflate(2, 2), 1)
             txt(surf, f, name.replace("_", " "), (rect.centerx, 130), center=True)
@@ -101,6 +114,21 @@ def draw_game(surf, game, art):
         pygame.draw.rect(surf, (255, 255, 255) if hot else color, rect)
         pygame.draw.rect(surf, (20, 20, 30), rect, 1)
         txt(surf, f, label, rect.center, (20, 20, 30) if hot else (255, 255, 255), True)
+
+    # hint
+    hot = HINT_RECT.collidepoint(mx, my)
+    pygame.draw.rect(surf, (255, 255, 255) if hot else (200, 160, 60), HINT_RECT)
+    pygame.draw.rect(surf, (20, 20, 30), HINT_RECT, 1)
+    txt(surf, f, "HINT", HINT_RECT.center, (20, 20, 30), True)
+    cost_label = "free" if game.mode == "practice" else f"-{HINT_C}"
+    txt(
+        surf,
+        f,
+        cost_label,
+        (HINT_RECT.centerx, HINT_RECT.bottom + 8),
+        (200, 160, 60),
+        True,
+    )
 
     # result potion
     if game.result and game.brewing_t <= 0:
@@ -201,21 +229,29 @@ def draw_gameover(surf, game, art):
     shade = pygame.Surface((W, H), pygame.SRCALPHA)
     shade.fill((10, 5, 20, 190))
     surf.blit(shade, (0, 0))
-    txt(surf, art.big, "GAME OVER", (W // 2, 50), (255, 100, 100), True)
+    txt(surf, art.big, "GAME OVER", (W // 2, 34), (255, 100, 100), True)
     label = DIFF[game.mode]["label"]
     txt(
         surf,
         f,
         f"{label} mode - you earned {game.coins} coins (Amazing! :D)",
-        (W // 2, 86),
+        (W // 2, 66),
         center=True,
     )
-    txt(surf, f, "ENTER - Retry    ESC - Menu", (W // 2, 110), (180, 170, 200), True)
+    txt(surf,f,f"Best streak this run: {game.best_streak}", (W//2,81), center=True)
+    top = game.scores[game.mode]["coins"]
+    if game.new_bc:
+        txt(surf,f,"NEW HIGH SCORE WOW!", (W//2,96), (255,190,70), True)
+    else:
+        txt(surf,f,f"High score: {top}", (W//2,96), (255,220,80),True)
+    if game.new_bs:
+        txt(surf,f,"New best streak amazing!", (W//2,111), (255,170,60), True)
+    txt(surf, f, "ENTER - Retry    ESC - Menu", (W // 2, 133), (180, 170, 200), True)
     txt(
         surf,
         f,
         "1 Normal    2 Hard     3 Practice",
-        (W // 2, 124),
+        (W // 2, 148),
         (180, 170, 200),
         True,
     )

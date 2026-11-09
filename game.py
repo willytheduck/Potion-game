@@ -21,6 +21,10 @@ from settings import (
     CLEAR_RECT,
     CAULDRON_POS,
     COMBO_M,
+    SCORES,
+    HINT_C,
+    HINT_T,
+    HINT_RECT,
 )
 from data import INGREDIENTS, POTIONS, RECIPES, EFFECTS, CUSTOMERS, ORDERABLE, R
 from settings import ICON, W
@@ -48,16 +52,46 @@ def save_d(found):
         pass
 
 
+def load_s():
+    try:
+        with open(SCORES, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        data = {}
+    out = {}
+    for m in ("normal", "hard"):
+        d = data.get(m, {}) if isinstance(data, dict) else {}
+        try:
+            out[m] = {
+                "coins": int(d.get("coins", 0)),
+                "streak": int(d.get("streak", 0)),
+            }
+        except (TypeError, ValueError, AttributeError):
+            out[m] = {"coins": 0, "streak": 0}
+    return out
+
+
+def save_scores(scores):
+    try:
+        with open(SCORES, "w", encoding="utf-8") as f:
+            json.dump(scores, f)
+    except OSError:
+        pass
+
+
 class Game:
     def __init__(self, art):
         self.art = art
         self.play = art.play
         self.discover = load_d()
+        self.scores = load_s()
         self.state = "menu"  # menu/play/gameover
         self.mode = "normal"  # difficulty
         self.t = 0.0
         self.book = False
         self.reset_r()
+        self.muted = False
+        art.start_music(self.muted)
 
     # round
     def reset_r(self):
@@ -68,6 +102,11 @@ class Game:
         self.coins = 0
         self.streak = 0
         self.best_streak = 0
+        self.new_bc = False
+        self.new_bs = False
+        self.hint_pid = None
+        self.hint_shown = []
+        self.hint_t = 0.0
         self.lives = S_LIVES
         self.customer = None
         self.next_ct = 0.5
@@ -103,6 +142,7 @@ class Game:
     def finish_b(self):
         pid = self.current_p()
         self.slots = []
+        self.hint_t = 0.0  # glow off once brew
         self.result = (pid, 3.0)
         if pid != "sludge" and pid not in self.discover:
             self.discover.add(pid)
@@ -166,13 +206,72 @@ class Game:
         if WRONG_LEAVES:
             self.customer_leaves()
         elif self.lives <= 0:
-            self.state = "gameover"
+            self.end_game()
 
     def customer_leaves(self):
         self.customer = None
         self.next_ct = NEXT_CD
+        self.hint_t = 0.0
         if self.lives <= 0:
-            self.state = "gameover"
+            self.end_game()
+
+    def record_score(self):
+        if self.mode == "practice":
+            return
+        best = self.scores[self.mode]
+        self.new_bc = self.coins > best["coins"]
+        self.new_bs = self.best_streak > best["streak"]
+        if self.new_bc:
+            best["coins"] = self.coins
+        if self.new_bs:
+            best["streak"] = self.best_streak
+        if self.new_bc or self.new_bs:
+            save_scores(self.scores)
+
+    def end_game(self):
+        self.state = "gameover"
+        self.record_score()
+
+    # hint
+    def use_hint(self):
+        if self.state != "play" or self.brewing_t > 0:
+            return
+        if self.mode == "practice":
+            todo = [p for p in ORDERABLE if p not in self.discover]
+            if not todo:
+                self.say("what? You already know all the recipe.", 2.0)
+                return
+            pid = self.hint_pid if self.hint_pid in todo else random.choice(todo)
+            cost = 0
+        else:
+            c = self.customer
+            if c is None:
+                self.say("No customer right now", 1.5)
+                return
+            open_orders = [p for i, p in enumerate(c["orders"]) if not c["done"][i]]
+            pid = open_orders[0]  # hint for first order still open
+            cost = HINT_C
+        key = next(k for k, v in RECIPES.items() if v == pid)
+        if pid != self.hint_pid:  # new -> start hint over
+            self.hint_pid = pid
+            self.hint_shown = []
+        left = [i for i in key if i not in self.hint_shown]
+        if not left:  # nothing new, so it's free
+            self.hint_t = HINT_T
+            self.say(f"HM. You've seen all the ingredients for {POTIONS[pid][0]}", 2.0)
+            return
+        if self.coins < cost:
+            self.say(f"A hint costs {cost} coins (better grind)", 1.5)
+            return
+        ing = random.choice(left)
+        self.coins -= cost
+        self.hint_shown.append(ing)
+        self.hint_t = HINT_T
+        self.say(
+            f"Hint: {POTIONS[pid][0]} needs {ing.replace('_', ' ')}"
+            f"({len(self.hint_shown)}/{len(key)})",
+            3.0,
+        )
 
     # input
     def click(self, x, y):
@@ -191,6 +290,8 @@ class Game:
             self.start_brew()
         elif CLEAR_RECT.collidepoint(x, y):
             self.slots = []
+        elif HINT_RECT.collidepoint(x, y):
+            self.use_hint()
 
     def key(self, k):
         if k == pygame.K_ESCAPE:
@@ -200,9 +301,15 @@ class Game:
                 pygame.quit()
                 sys.exit()
             else:
+                if self.state == "play":
+                    self.record_score()
                 self.state = "menu"
         elif k == pygame.K_b:
             self.book = not self.book
+        elif k == pygame.K_m:
+            self.muted = not self.muted
+            self.art.set_muted(self.muted)
+            self.say("Music off" if self.muted else "Music on", 1.5)
         elif self.state in ("menu", "gameover"):
             if k == pygame.K_1:
                 self.start_mode("normal")
@@ -216,6 +323,8 @@ class Game:
             self.start_brew()
         elif k == pygame.K_c and self.brewing_t <= 0:
             self.slots = []
+        elif k == pygame.K_h:
+            self.use_hint()
 
     # update
     def update(self, dt):
@@ -224,6 +333,8 @@ class Game:
             self.msg_t -= dt
         if self.dummy_t > 0:
             self.dummy_t -= dt
+        if self.hint_t > 0:
+            self.hint_t -= dt
         if self.result:
             pid, left = self.result
             left -= dt

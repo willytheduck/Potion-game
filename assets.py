@@ -1,6 +1,6 @@
 import os
 import pygame
-from settings import ASSETS, FONT, ICON, W, H
+from settings import ASSETS, FONT, ICON, W, H, MUSIC_FILES, MUSIC_VOL
 from data import INGREDIENTS, POTIONS, CUSTOMERS
 
 
@@ -15,7 +15,10 @@ class Assets:
     def __init__(self):
         self.font = pygame.font.Font(FONT, 12)
         self.big = pygame.font.Font(FONT, 26)
+        self.sounds = {}
+        self.music_path = None
         self.load_images()
+        self.load_music()
 
     def img(self, name, size, color, label=""):
         surf = try_load(name)
@@ -80,7 +83,32 @@ class Assets:
         ]
         self.boss_img = self.img("boss.png", (32, 32), (150, 30, 40), "BOSS")
         self.dummy_img = self.img("customer_1.png", (48, 64), (170, 130, 80), "dummy")
-    
+
+    #bgm
+    def load_music(self):
+        for name in MUSIC_FILES:
+            path = os.path.join(ASSETS, name)
+            if os.path.exists(path):
+                self.music_path = path
+                return
+            
+    def start_music(self,muted=False):
+        if not self.music_path:
+            return
+        try:
+            pygame.mixer.music.load(self.music_path)
+            pygame.mixer.music.set_volume(0.0 if muted else MUSIC_VOL)
+            pygame.mixer.music.play(-1) # -1 = loop forever
+        except pygame.error:
+            self.music_path = None
+    def set_muted(self, muted):
+        if not self.music_path:
+            return
+        try:
+            pygame.mixer.music.set_volume(0.0 if muted else MUSIC_VOL)
+        except pygame.error:
+            pass        
+
     def play(self,name):
         snd = self.sounds.get(name)
         if snd:

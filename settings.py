@@ -32,12 +32,24 @@ BOSS_B = 50  # extra coins if finished
 # combo
 COMBO_M = (1.0, 1.0, 1.5, 2.0)
 
+#high score
+SCORES = "scores.json"
+
+#hint
+HINT_C = 15 #coins/hint (practice is free)
+HINT_T = 8.0 #hint for 8 seconds
+
+#bgm
+MUSIC_FILES = ("bgm.ogg","bgm.mp3","bgm.wav")
+MUSIC_VOL = 0.6
+
 # layout
 CAULDRON_POS = (128, 64)
 SLOT_R = [
     pygame.Rect(x, y, ICON, ICON)
     for (x, y) in ((52, 66), (90, 66), (52, 100), (90, 100))
 ]
+HINT_RECT = pygame.Rect(14,66,34,14)
 BREW_RECT = pygame.Rect(262, 96, 48, 14)
 CLEAR_RECT = pygame.Rect(262, 114, 48, 14)
 RESULT_POS = (206, 70)
