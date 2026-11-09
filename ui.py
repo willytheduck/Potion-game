@@ -124,6 +124,11 @@ def draw_game(surf, game, art):
         txt(surf, f, f"Coins: {game.coins}", (244, 16), (255, 220, 80))
         txt(surf, f, f"Lives: {game.lives}", (244, 28), (255, 110, 110))
         txt(surf, f, DIFF[game.mode]["label"], (244, 40), (180, 170, 200))
+        mult = game.combo_mult()
+        if mult > 1:
+            txt(surf, f, f"COMBO x{mult:g} WOW", (244, 52), (255, 170, 60))
+        else:
+            txt(surf, f, f"Streak: {game.streak}", (244, 52), (180, 170, 200))
 
     if game.brewing_t > 0:
         txt(surf, f, "Brewing...", (W // 2, MESSAGE_Y), (255, 240, 160), True)

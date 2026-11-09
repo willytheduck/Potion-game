@@ -29,6 +29,9 @@ DIFF = {
 BOSS_P = 4  # boss always order this much
 BOSS_B = 50  # extra coins if finished
 
+# combo
+COMBO_M = (1.0, 1.0, 1.5, 2.0)
+
 # layout
 CAULDRON_POS = (128, 64)
 SLOT_R = [

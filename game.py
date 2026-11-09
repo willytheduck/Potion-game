@@ -20,6 +20,7 @@ from settings import (
     BREW_RECT,
     CLEAR_RECT,
     CAULDRON_POS,
+    COMBO_M,
 )
 from data import INGREDIENTS, POTIONS, RECIPES, EFFECTS, CUSTOMERS, ORDERABLE, R
 from settings import ICON, W
@@ -65,6 +66,8 @@ class Game:
         self.result = None  # (potion id, s left)
         self.brewing_t = 0.0
         self.coins = 0
+        self.streak = 0
+        self.best_streak = 0
         self.lives = S_LIVES
         self.customer = None
         self.next_ct = 0.5
@@ -81,6 +84,9 @@ class Game:
 
     def say(self, txt, secs=2.5):
         self.msg, self.msg_t = txt, secs
+
+    def combo_mult(self):
+        return COMBO_M[min(self.streak, len(COMBO_M) - 1)]
 
     # brewing
     def current_p(self):
@@ -137,18 +143,24 @@ class Game:
         for i, want in enumerate(c["orders"]):
             if not c["done"][i] and want == pid:
                 c["done"][i] = True
-                gain = 10 + int(10 * max(0.0, c["patience"]) / c["max"])
+                self.streak += 1
+                self.best_streak = max(self.best_streak, self.streak)
+                mult = self.combo_mult()
+                base = 10 + int(10 * max(0.0, c["patience"]) / c["max"])
+                gain = int(base * mult)
+                tag = f" x{mult:g}" if mult > 1 else ""
                 self.coins += gain
                 if all(c["done"]):
                     extra = BOSS_B if c["boss"] else 0
                     self.coins += extra
-                    self.say(f"{name}: PERFECTO! +{gain +extra} coins (good job!)")
+                    self.say(f"{name}: PERFECTO! +{gain +extra} coins{tag} (good job!)")
                     self.customer_leaves()
                 else:
                     left = c["done"].count(False)
-                    self.say(f"{name}: nice! {left} more to go! (+{gain})")
+                    self.say(f"{name}: nice! {left} more to go! (+{gain}{tag})")
                 return
         # wrong potion
+        self.streak = 0
         self.lives -= 1
         self.say(f"{name}: What the hell is this? I didn't order this!")
         if WRONG_LEAVES:
@@ -205,7 +217,7 @@ class Game:
         elif k == pygame.K_c and self.brewing_t <= 0:
             self.slots = []
 
-    #update
+    # update
     def update(self, dt):
         self.t += dt
         if self.msg_t > 0:
@@ -246,6 +258,7 @@ class Game:
             elif self.brewing_t <= 0:
                 self.customer["patience"] -= dt
                 if self.customer["patience"] <= 0:
+                    self.streak = 0
                     self.lives -= 1
                     self.say(
                         f"{self.customer_name()} got tired of waiting! DO IT FASTER"
