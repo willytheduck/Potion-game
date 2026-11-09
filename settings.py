@@ -1,12 +1,29 @@
+import os
+import sys
+
 import pygame
+
+
+def resource_path(rel):
+    # where bundled files (assets) live: inside the .exe, or next to your code
+    base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base, rel)
+
+
+def app_dir():
+    # the folder next to the .exe (or next to your code) - for save files
+    if getattr(sys, "frozen", False):
+        return os.path.dirname(sys.executable)
+    return os.path.dirname(os.path.abspath(__file__))
+
 
 # screen
 W, H = 320, 180
 SCALE = 4
 FPS = 60
-ASSETS = "assets"
-FONT = "assets/PixelifySans-VariableFont_wght.ttf"
-SAVE = "discover.json"
+ASSETS = resource_path("assets")
+FONT = resource_path("assets/PixelifySans-VariableFont_wght.ttf")
+SAVE = os.path.join(app_dir(), "discover.json")
 
 # brew
 ICON = 32
@@ -33,7 +50,7 @@ BOSS_B = 50  # extra coins if finished
 COMBO_M = (1.0, 1.0, 1.5, 2.0)
 
 #high score
-SCORES = "scores.json"
+SCORES = os.path.join(app_dir(), "scores.json")
 
 #hint
 HINT_C = 15 #coins/hint (practice is free)
